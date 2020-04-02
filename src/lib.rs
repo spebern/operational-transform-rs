@@ -2,13 +2,18 @@
 pub mod serde;
 
 use std::{cmp::Ordering, iter::FromIterator};
+
 #[derive(Debug, Clone, PartialEq)]
 enum Operation {
+    // Deletes n characters at the current cursor position.
     Delete(u32),
+    // Moves the cursor n positions forward.
     Retain(u32),
+    // Inserts string at the current cursor position.
     Insert(String),
 }
 
+/// A sequence of `Operation`s on text.
 #[derive(Debug, PartialEq)]
 pub struct TextOperation {
     // The consecutive operations to be applied to the target.
@@ -41,6 +46,11 @@ impl FromIterator<Operation> for TextOperation {
 }
 
 impl TextOperation {
+    /// Merges the operation with `other` into one operation while preserving
+    /// the changes of both. Or, in other words, for each input string S and a
+    /// pair of consecutive operations A and B.
+    ///     `apply(apply(S, A), B) = apply(S, compose(A, B))`
+    /// must hold.
     pub fn compose(&self, other: &Self) -> Self {
         assert_eq!(self.target_len, other.base_len, "The base length of the second operation has to be the target length of the first operation");
 
@@ -151,18 +161,20 @@ impl TextOperation {
         }
     }
 
-    pub fn delete(&mut self, i: u32) {
-        if i == 0 {
+    /// Deletes `n` characters at the current cursor position.
+    pub fn delete(&mut self, n: u32) {
+        if n == 0 {
             return;
         }
-        self.base_len += i as usize;
-        if let Some(Operation::Delete(i_last)) = self.ops.last_mut() {
-            *i_last += i;
+        self.base_len += n as usize;
+        if let Some(Operation::Delete(n_last)) = self.ops.last_mut() {
+            *n_last += n;
         } else {
-            self.ops.push(Operation::Delete(i));
+            self.ops.push(Operation::Delete(n));
         }
     }
 
+    /// Inserts a `s` at the current cursor position.
     pub fn insert(&mut self, s: String) {
         if s.is_empty() {
             return;
@@ -187,19 +199,24 @@ impl TextOperation {
         self.ops.push(new_last);
     }
 
-    pub fn retain(&mut self, i: u32) {
-        if i == 0 {
+    /// Moves the cursor `n` characters forwards.
+    pub fn retain(&mut self, n: u32) {
+        if n == 0 {
             return;
         }
-        self.base_len += i as usize;
-        self.target_len += i as usize;
+        self.base_len += n as usize;
+        self.target_len += n as usize;
         if let Some(Operation::Retain(i_last)) = self.ops.last_mut() {
-            *i_last += i;
+            *i_last += n;
         } else {
-            self.ops.push(Operation::Retain(i));
+            self.ops.push(Operation::Retain(n));
         }
     }
 
+    /// Transforms two operations A and B that happened concurrently and produces
+    /// two operations A' and B' (in an array) such that
+    ///     `apply(apply(S, A), B') = apply(apply(S, B), A')`.
+    /// This function is the heart of OT.
     pub fn transform(&self, other: &Self) -> (Self, Self) {
         assert_eq!(
             self.base_len, other.base_len,
@@ -316,6 +333,7 @@ impl TextOperation {
         (a_prime, b_prime)
     }
 
+    /// Applies an operation to a string, returning a new string.
     pub fn apply(&self, s: &str) -> String {
         assert_eq!(
             s.chars().count(),
@@ -344,6 +362,11 @@ impl TextOperation {
         new_s
     }
 
+    /// Computes the inverse of an operation. The inverse of an operation is the
+    /// operation that reverts the effects of the operation, e.g. when you have
+    /// an operation 'insert("hello "); skip(6);' then the inverse is
+    /// 'delete("hello "); skip(6);'. The inverse should be used for
+    /// implementing undo.
     pub fn invert(&self, s: &str) -> Self {
         let mut inverse = TextOperation::default();
         let chars = &mut s.chars();
@@ -366,6 +389,7 @@ impl TextOperation {
         inverse
     }
 
+    /// Checks if this operation has no effect.
     pub fn is_noop(&self) -> bool {
         match self.ops.as_slice() {
             [] => true,
