@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 pub mod serde;
 
-use std::{cmp::Ordering, iter::FromIterator};
+use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 
 #[derive(Debug, Clone, PartialEq)]
 enum Operation {
@@ -15,7 +15,7 @@ enum Operation {
 
 /// A sequence of `Operation`s on text.
 #[derive(Debug, PartialEq)]
-pub struct TextOperation {
+pub struct OperationSeq {
     // The consecutive operations to be applied to the target.
     ops: Vec<Operation>,
     // The required length of a string these operations can be applied to.
@@ -25,7 +25,7 @@ pub struct TextOperation {
     target_len: usize,
 }
 
-impl Default for TextOperation {
+impl Default for OperationSeq {
     fn default() -> Self {
         Self {
             ops: Vec::new(),
@@ -35,9 +35,9 @@ impl Default for TextOperation {
     }
 }
 
-impl FromIterator<Operation> for TextOperation {
+impl FromIterator<Operation> for OperationSeq {
     fn from_iter<T: IntoIterator<Item = Operation>>(ops: T) -> Self {
-        let mut operations = TextOperation::default();
+        let mut operations = OperationSeq::default();
         for op in ops {
             operations.add(op);
         }
@@ -45,16 +45,39 @@ impl FromIterator<Operation> for TextOperation {
     }
 }
 
-impl TextOperation {
+/// Error for failed operational transform operations.
+#[derive(Debug)]
+pub struct OTError;
+
+impl fmt::Display for OTError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "incompatible lengths")
+    }
+}
+
+impl Error for OTError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
+}
+
+impl OperationSeq {
     /// Merges the operation with `other` into one operation while preserving
     /// the changes of both. Or, in other words, for each input string S and a
     /// pair of consecutive operations A and B.
     ///     `apply(apply(S, A), B) = apply(S, compose(A, B))`
     /// must hold.
-    pub fn compose(&self, other: &Self) -> Self {
-        assert_eq!(self.target_len, other.base_len, "The base length of the second operation has to be the target length of the first operation");
+    ///
+    /// # Error
+    ///
+    /// Returns an `OTError` if the operations are not composable due to length
+    /// conflicts.
+    pub fn compose(&self, other: &Self) -> Result<Self, OTError> {
+        if self.target_len != other.base_len {
+            return Err(OTError {});
+        }
 
-        let mut new_operations = TextOperation::default();
+        let mut new_op_seq = OperationSeq::default();
         let mut ops1 = self.ops.iter().cloned();
         let mut ops2 = other.ops.iter().cloned();
 
@@ -64,32 +87,32 @@ impl TextOperation {
             match (&maybe_op1, &maybe_op2) {
                 (None, None) => break,
                 (Some(Operation::Delete(i)), _) => {
-                    new_operations.delete(*i);
+                    new_op_seq.delete(*i);
                     maybe_op1 = ops1.next();
                 }
                 (_, Some(Operation::Insert(s))) => {
-                    new_operations.insert(s.clone());
+                    new_op_seq.insert(s.clone());
                     maybe_op2 = ops2.next();
                 }
                 (None, _) => {
-                    panic!("Cannot compose operations: first operation is too short.");
+                    return Err(OTError);
                 }
                 (_, None) => {
-                    panic!("Cannot compose operations: second operation is too short.");
+                    return Err(OTError);
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => match i.cmp(&j) {
                     Ordering::Less => {
-                        new_operations.retain(*i);
+                        new_op_seq.retain(*i);
                         maybe_op2 = Some(Operation::Retain(*j - *i));
                         maybe_op1 = ops1.next();
                     }
                     std::cmp::Ordering::Equal => {
-                        new_operations.retain(*i);
+                        new_op_seq.retain(*i);
                         maybe_op1 = ops1.next();
                         maybe_op2 = ops2.next();
                     }
                     std::cmp::Ordering::Greater => {
-                        new_operations.retain(*j);
+                        new_op_seq.retain(*j);
                         maybe_op1 = Some(Operation::Retain(*i - *j));
                         maybe_op2 = ops2.next();
                     }
@@ -114,18 +137,18 @@ impl TextOperation {
                 (Some(Operation::Insert(s)), Some(Operation::Retain(j))) => {
                     match (s.chars().count() as u32).cmp(j) {
                         Ordering::Less => {
-                            new_operations.insert(s.to_owned());
+                            new_op_seq.insert(s.to_owned());
                             maybe_op2 = Some(Operation::Retain(*j - s.chars().count() as u32));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
-                            new_operations.insert(s.to_owned());
+                            new_op_seq.insert(s.to_owned());
                             maybe_op1 = ops1.next();
                             maybe_op2 = ops2.next();
                         }
                         Ordering::Greater => {
                             let chars = &mut s.chars();
-                            new_operations.insert(chars.take(*j as usize).collect());
+                            new_op_seq.insert(chars.take(*j as usize).collect());
                             maybe_op1 = Some(Operation::Insert(chars.collect()));
                             maybe_op2 = ops2.next();
                         }
@@ -133,24 +156,24 @@ impl TextOperation {
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Delete(j))) => match i.cmp(&j) {
                     Ordering::Less => {
-                        new_operations.delete(*i);
+                        new_op_seq.delete(*i);
                         maybe_op2 = Some(Operation::Delete(*j - *i));
                         maybe_op1 = ops1.next();
                     }
                     Ordering::Equal => {
-                        new_operations.delete(*j);
+                        new_op_seq.delete(*j);
                         maybe_op2 = ops2.next();
                         maybe_op1 = ops1.next();
                     }
                     Ordering::Greater => {
-                        new_operations.delete(*j);
+                        new_op_seq.delete(*j);
                         maybe_op1 = Some(Operation::Retain(*i - *j));
                         maybe_op2 = ops2.next();
                     }
                 },
             };
         }
-        new_operations
+        Ok(new_op_seq)
     }
 
     fn add(&mut self, op: Operation) {
@@ -217,13 +240,18 @@ impl TextOperation {
     /// two operations A' and B' (in an array) such that
     ///     `apply(apply(S, A), B') = apply(apply(S, B), A')`.
     /// This function is the heart of OT.
-    pub fn transform(&self, other: &Self) -> (Self, Self) {
-        assert_eq!(
-            self.base_len, other.base_len,
-            "Both operations have to have the same base length"
-        );
-        let mut a_prime = TextOperation::default();
-        let mut b_prime = TextOperation::default();
+    ///
+    /// # Error
+    ///
+    /// Returns an `OTError` if the operations cannot be transformed due to
+    /// length conflicts.
+    pub fn transform(&self, other: &Self) -> Result<(Self, Self), OTError> {
+        if self.base_len != other.base_len {
+            return Err(OTError {});
+        }
+
+        let mut a_prime = OperationSeq::default();
+        let mut b_prime = OperationSeq::default();
 
         let mut ops1 = self.ops.iter().cloned();
         let mut ops2 = other.ops.iter().cloned();
@@ -244,10 +272,10 @@ impl TextOperation {
                     maybe_op2 = ops2.next();
                 }
                 (None, _) => {
-                    panic!("Cannot compose operations: first operation is too short.");
+                    return Err(OTError {});
                 }
                 (_, None) => {
-                    panic!("Cannot compose operations: second operation is too short.");
+                    return Err(OTError {});
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => {
                     let mut min = 0;
@@ -330,16 +358,19 @@ impl TextOperation {
             }
         }
 
-        (a_prime, b_prime)
+        Ok((a_prime, b_prime))
     }
 
     /// Applies an operation to a string, returning a new string.
-    pub fn apply(&self, s: &str) -> String {
-        assert_eq!(
-            s.chars().count(),
-            self.base_len,
-            "The operation's base length must be equal to the string's length."
-        );
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the operation cannot be applied due to length
+    /// conflicts.
+    pub fn apply(&self, s: &str) -> Result<String, OTError> {
+        if s.chars().count() != self.base_len {
+            return Err(OTError {});
+        }
         let mut new_s = String::new();
         let chars = &mut s.chars();
         for op in self.ops.iter() {
@@ -359,7 +390,7 @@ impl TextOperation {
                 }
             }
         }
-        new_s
+        Ok(new_s)
     }
 
     /// Computes the inverse of an operation. The inverse of an operation is the
@@ -368,7 +399,7 @@ impl TextOperation {
     /// 'delete("hello "); skip(6);'. The inverse should be used for
     /// implementing undo.
     pub fn invert(&self, s: &str) -> Self {
-        let mut inverse = TextOperation::default();
+        let mut inverse = OperationSeq::default();
         let chars = &mut s.chars();
         for op in self.ops.iter() {
             match op {
@@ -408,8 +439,8 @@ mod tests {
         (0..len).map(|_| rand::random::<char>()).collect()
     }
 
-    fn random_text_operation(s: &str) -> TextOperation {
-        let mut op = TextOperation::default();
+    fn random_text_operation(s: &str) -> OperationSeq {
+        let mut op = OperationSeq::default();
         let mut rng = rand::thread_rng();
         loop {
             let left = s.chars().count() - op.base_len;
@@ -441,7 +472,7 @@ mod tests {
 
     #[test]
     fn lengths() {
-        let mut o = TextOperation::default();
+        let mut o = OperationSeq::default();
         assert_eq!(o.base_len, 0);
         assert_eq!(o.target_len, 0);
         o.retain(5);
@@ -460,7 +491,7 @@ mod tests {
 
     #[test]
     fn sequence() {
-        let mut o = TextOperation::default();
+        let mut o = OperationSeq::default();
         o.retain(5);
         o.retain(0);
         o.insert("lorem".to_owned());
@@ -476,7 +507,7 @@ mod tests {
             let s = random_string(50);
             let o = random_text_operation(&s);
             assert_eq!(s.chars().count(), o.base_len);
-            assert_eq!(o.apply(&s).chars().count(), o.target_len);
+            assert_eq!(o.apply(&s).unwrap().chars().count(), o.target_len);
         }
     }
 
@@ -488,13 +519,13 @@ mod tests {
             let p = o.invert(&s);
             assert_eq!(o.base_len, p.target_len);
             assert_eq!(o.target_len, p.base_len);
-            assert_eq!(p.apply(&o.apply(&s)), s);
+            assert_eq!(p.apply(&o.apply(&s).unwrap()).unwrap(), s);
         }
     }
 
     #[test]
     fn empty_ops() {
-        let mut o = TextOperation::default();
+        let mut o = OperationSeq::default();
         o.retain(0);
         o.insert("".to_owned());
         o.delete(0);
@@ -503,12 +534,12 @@ mod tests {
 
     #[test]
     fn eq() {
-        let mut o1 = TextOperation::default();
+        let mut o1 = OperationSeq::default();
         o1.delete(1);
         o1.insert("lo".to_owned());
         o1.retain(2);
         o1.retain(3);
-        let mut o2 = TextOperation::default();
+        let mut o2 = OperationSeq::default();
         o2.delete(1);
         o2.insert("l".to_owned());
         o2.insert("o".to_owned());
@@ -521,7 +552,7 @@ mod tests {
 
     #[test]
     fn ops_merging() {
-        let mut o = TextOperation::default();
+        let mut o = OperationSeq::default();
         assert_eq!(o.ops.len(), 0);
         o.retain(2);
         assert_eq!(o.ops.len(), 1);
@@ -545,7 +576,7 @@ mod tests {
 
     #[test]
     fn is_noop() {
-        let mut o = TextOperation::default();
+        let mut o = OperationSeq::default();
         assert!(o.is_noop());
         o.retain(5);
         assert!(o.is_noop());
@@ -560,14 +591,14 @@ mod tests {
         for _ in 0..1000 {
             let s = random_string(20);
             let a = random_text_operation(&s);
-            let after_a = a.apply(&s);
+            let after_a = a.apply(&s).unwrap();
             assert_eq!(a.target_len, after_a.chars().count());
             let b = random_text_operation(&after_a);
-            let after_b = b.apply(&after_a);
+            let after_b = b.apply(&after_a).unwrap();
             assert_eq!(b.target_len, after_b.chars().count());
-            let ab = a.compose(&b);
+            let ab = a.compose(&b).unwrap();
             assert_eq!(ab.target_len, b.target_len);
-            let after_ab = ab.apply(&s);
+            let after_ab = ab.apply(&s).unwrap();
             assert_eq!(after_b, after_ab);
         }
     }
@@ -578,11 +609,11 @@ mod tests {
             let s = random_string(20);
             let a = random_text_operation(&s);
             let b = random_text_operation(&s);
-            let (a_prime, b_prime) = a.transform(&b);
-            let ab_prime = a.compose(&b_prime);
-            let ba_prime = b.compose(&a_prime);
-            let after_ab_prime = ab_prime.apply(&s);
-            let after_ba_prime = ba_prime.apply(&s);
+            let (a_prime, b_prime) = a.transform(&b).unwrap();
+            let ab_prime = a.compose(&b_prime).unwrap();
+            let ba_prime = b.compose(&a_prime).unwrap();
+            let after_ab_prime = ab_prime.apply(&s).unwrap();
+            let after_ba_prime = ba_prime.apply(&s).unwrap();
             assert_eq!(ab_prime, ba_prime);
             assert_eq!(after_ab_prime, after_ba_prime);
         }
@@ -593,8 +624,8 @@ mod tests {
     fn serde() {
         use serde_json;
 
-        let o: TextOperation = serde_json::from_str("[1,-1,\"abc\"]").unwrap();
-        let mut o_exp = TextOperation::default();
+        let o: OperationSeq = serde_json::from_str("[1,-1,\"abc\"]").unwrap();
+        let mut o_exp = OperationSeq::default();
         o_exp.retain(1);
         o_exp.delete(1);
         o_exp.insert("abc".to_owned());

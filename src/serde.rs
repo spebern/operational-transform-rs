@@ -1,4 +1,4 @@
-use crate::{Operation, TextOperation};
+use crate::{Operation, OperationSeq};
 use serde::{
     de::{self, Deserializer, SeqAccess, Visitor},
     ser::{SerializeSeq, Serializer},
@@ -59,7 +59,7 @@ impl<'de> Deserialize<'de> for Operation {
     }
 }
 
-impl Serialize for TextOperation {
+impl Serialize for OperationSeq {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -72,15 +72,15 @@ impl Serialize for TextOperation {
     }
 }
 
-impl<'de> Deserialize<'de> for TextOperation {
-    fn deserialize<D>(deserializer: D) -> Result<TextOperation, D::Error>
+impl<'de> Deserialize<'de> for OperationSeq {
+    fn deserialize<D>(deserializer: D) -> Result<OperationSeq, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct TextOperationVisitor;
+        struct OperationSeqVisitor;
 
-        impl<'de> Visitor<'de> for TextOperationVisitor {
-            type Value = TextOperation;
+        impl<'de> Visitor<'de> for OperationSeqVisitor {
+            type Value = OperationSeq;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a sequence")
@@ -90,7 +90,7 @@ impl<'de> Deserialize<'de> for TextOperation {
             where
                 A: SeqAccess<'de>,
             {
-                let mut o = TextOperation::default();
+                let mut o = OperationSeq::default();
                 while let Some(op) = seq.next_element()? {
                     o.add(op);
                 }
@@ -98,6 +98,6 @@ impl<'de> Deserialize<'de> for TextOperation {
             }
         }
 
-        deserializer.deserialize_seq(TextOperationVisitor)
+        deserializer.deserialize_seq(OperationSeqVisitor)
     }
 }
