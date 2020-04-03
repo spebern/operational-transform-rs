@@ -1,6 +1,9 @@
 #[cfg(feature = "serde")]
 pub mod serde;
 
+#[cfg(any(test, bench))]
+pub mod utilities;
+
 use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -428,47 +431,23 @@ impl OperationSeq {
             _ => false,
         }
     }
+
+    /// Returns the length of a string these operations can be applied to
+    pub fn base_len(&self) -> usize {
+        self.base_len
+    }
+
+    /// Returns the length of the resulting string after the operations have
+    /// been applied.
+    pub fn target_len(&self) -> usize {
+        self.target_len
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::*;
-
-    fn random_string(len: usize) -> String {
-        (0..len).map(|_| rand::random::<char>()).collect()
-    }
-
-    fn random_text_operation(s: &str) -> OperationSeq {
-        let mut op = OperationSeq::default();
-        let mut rng = rand::thread_rng();
-        loop {
-            let left = s.chars().count() - op.base_len;
-            if left == 0 {
-                break;
-            }
-            let i = if left == 1 {
-                1
-            } else {
-                1 + rng.gen_range(0, std::cmp::min(left - 1, 20))
-            };
-            match rng.gen_range(0.0, 1.0) {
-                f if f < 0.2 => {
-                    op.insert(random_string(i));
-                }
-                f if f < 0.4 => {
-                    op.delete(i as u32);
-                }
-                _ => {
-                    op.retain(i as u32);
-                }
-            }
-        }
-        if rng.gen_range(0.0, 1.0) < 0.3 {
-            op.insert("1".to_owned() + &random_string(10));
-        }
-        op
-    }
+    use crate::utilities::{random_operation_seq, random_string};
 
     #[test]
     fn lengths() {
@@ -504,8 +483,8 @@ mod tests {
     #[test]
     fn apply() {
         for _ in 0..1000 {
-            let s = random_string(50);
-            let o = random_text_operation(&s);
+            let s = random_string(50, None);
+            let o = random_operation_seq(&s, None);
             assert_eq!(s.chars().count(), o.base_len);
             assert_eq!(o.apply(&s).unwrap().chars().count(), o.target_len);
         }
@@ -514,8 +493,8 @@ mod tests {
     #[test]
     fn invert() {
         for _ in 0..1000 {
-            let s = random_string(50);
-            let o = random_text_operation(&s);
+            let s = random_string(50, None);
+            let o = random_operation_seq(&s, None);
             let p = o.invert(&s);
             assert_eq!(o.base_len, p.target_len);
             assert_eq!(o.target_len, p.base_len);
@@ -589,11 +568,11 @@ mod tests {
     #[test]
     fn compose() {
         for _ in 0..1000 {
-            let s = random_string(20);
-            let a = random_text_operation(&s);
+            let s = random_string(20, None);
+            let a = random_operation_seq(&s, None);
             let after_a = a.apply(&s).unwrap();
             assert_eq!(a.target_len, after_a.chars().count());
-            let b = random_text_operation(&after_a);
+            let b = random_operation_seq(&after_a, None);
             let after_b = b.apply(&after_a).unwrap();
             assert_eq!(b.target_len, after_b.chars().count());
             let ab = a.compose(&b).unwrap();
@@ -606,9 +585,9 @@ mod tests {
     #[test]
     fn transform() {
         for _ in 0..1000 {
-            let s = random_string(20);
-            let a = random_text_operation(&s);
-            let b = random_text_operation(&s);
+            let s = random_string(20, None);
+            let a = random_operation_seq(&s, None);
+            let b = random_operation_seq(&s, None);
             let (a_prime, b_prime) = a.transform(&b).unwrap();
             let ab_prime = a.compose(&b_prime).unwrap();
             let ba_prime = b.compose(&a_prime).unwrap();
@@ -631,8 +610,8 @@ mod tests {
         o_exp.insert("abc".to_owned());
         assert_eq!(o, o_exp);
         for _ in 0..1000 {
-            let s = random_string(20);
-            let o = random_text_operation(&s);
+            let s = random_string(20, None);
+            let o = random_operation_seq(&s, None);
             assert_eq!(
                 o,
                 serde_json::from_str(&serde_json::to_string(&o).unwrap()).unwrap()
