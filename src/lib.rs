@@ -447,7 +447,7 @@ impl OperationSeq {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utilities::{random_operation_seq, random_string};
+    use crate::utilities::Rng;
 
     #[test]
     fn lengths() {
@@ -483,8 +483,9 @@ mod tests {
     #[test]
     fn apply() {
         for _ in 0..1000 {
-            let s = random_string(50, None);
-            let o = random_operation_seq(&s, None);
+            let mut rng = Rng::default();
+            let s = rng.gen_string(50);
+            let o = rng.gen_operation_seq(&s);
             assert_eq!(s.chars().count(), o.base_len);
             assert_eq!(o.apply(&s).unwrap().chars().count(), o.target_len);
         }
@@ -493,8 +494,9 @@ mod tests {
     #[test]
     fn invert() {
         for _ in 0..1000 {
-            let s = random_string(50, None);
-            let o = random_operation_seq(&s, None);
+            let mut rng = Rng::default();
+            let s = rng.gen_string(50);
+            let o = rng.gen_operation_seq(&s);
             let p = o.invert(&s);
             assert_eq!(o.base_len, p.target_len);
             assert_eq!(o.target_len, p.base_len);
@@ -568,11 +570,12 @@ mod tests {
     #[test]
     fn compose() {
         for _ in 0..1000 {
-            let s = random_string(20, None);
-            let a = random_operation_seq(&s, None);
+            let mut rng = Rng::default();
+            let s = rng.gen_string(20);
+            let a = rng.gen_operation_seq(&s);
             let after_a = a.apply(&s).unwrap();
             assert_eq!(a.target_len, after_a.chars().count());
-            let b = random_operation_seq(&after_a, None);
+            let b = rng.gen_operation_seq(&after_a);
             let after_b = b.apply(&after_a).unwrap();
             assert_eq!(b.target_len, after_b.chars().count());
             let ab = a.compose(&b).unwrap();
@@ -585,9 +588,10 @@ mod tests {
     #[test]
     fn transform() {
         for _ in 0..1000 {
-            let s = random_string(20, None);
-            let a = random_operation_seq(&s, None);
-            let b = random_operation_seq(&s, None);
+            let mut rng = Rng::default();
+            let s = rng.gen_string(20);
+            let a = rng.gen_operation_seq(&s);
+            let b = rng.gen_operation_seq(&s);
             let (a_prime, b_prime) = a.transform(&b).unwrap();
             let ab_prime = a.compose(&b_prime).unwrap();
             let ba_prime = b.compose(&a_prime).unwrap();
@@ -603,6 +607,8 @@ mod tests {
     fn serde() {
         use serde_json;
 
+        let mut rng = Rng::default();
+
         let o: OperationSeq = serde_json::from_str("[1,-1,\"abc\"]").unwrap();
         let mut o_exp = OperationSeq::default();
         o_exp.retain(1);
@@ -610,8 +616,8 @@ mod tests {
         o_exp.insert("abc".to_owned());
         assert_eq!(o, o_exp);
         for _ in 0..1000 {
-            let s = random_string(20, None);
-            let o = random_operation_seq(&s, None);
+            let s = rng.gen_string(20);
+            let o = rng.gen_operation_seq(&s);
             assert_eq!(
                 o,
                 serde_json::from_str(&serde_json::to_string(&o).unwrap()).unwrap()

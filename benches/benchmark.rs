@@ -4,25 +4,19 @@ use operational_transform::OperationSeq;
 mod utilities;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use utilities::{random_operation_seq, random_string};
+use utilities::Rng;
 
 pub fn compose(c: &mut Criterion) {
-    let mut input = Vec::with_capacity(1000);
-    for i in 0..1000_u32 {
-        let mut seed = [0; 32];
-        for (i, seed) in i.to_be_bytes().iter().zip(&mut seed) {
-            *seed = *i;
-        }
-        let s = random_string(20, Some(seed));
-        seed[seed.len() - 1] = 1;
-        let a = random_operation_seq(&s, Some(seed));
-        seed[seed.len() - 1] = 2;
-        let after_a = a.apply(&s).unwrap();
-        seed[seed.len() - 1] = 3;
-        let b = random_operation_seq(&after_a, Some(seed));
-        input.push((a, b));
-    }
-
+    let mut rng = Rng::from_seed(Default::default());
+    let input = (0..1000)
+        .map(|_| {
+            let s = rng.gen_string(20);
+            let a = rng.gen_operation_seq(&s);
+            let after_a = a.apply(&s).unwrap();
+            let b = rng.gen_operation_seq(&after_a);
+            (a, b)
+        })
+        .collect::<Vec<_>>();
     c.bench_function("compose", |b| {
         b.iter(|| {
             for (a, b) in input.iter() {
@@ -33,20 +27,15 @@ pub fn compose(c: &mut Criterion) {
 }
 
 pub fn transform(c: &mut Criterion) {
-    let mut input = Vec::with_capacity(1000);
-    for i in 0..1000_u32 {
-        let mut seed = [0; 32];
-        for (i, seed) in i.to_be_bytes().iter().zip(&mut seed) {
-            *seed = *i;
-        }
-        let s = random_string(20, Some(seed));
-        seed[seed.len() - 1] = 1;
-        let a = random_operation_seq(&s, Some(seed));
-        seed[seed.len() - 1] = 2;
-        let b = random_operation_seq(&s, Some(seed));
-        input.push((a, b));
-    }
-
+    let mut rng = Rng::from_seed(Default::default());
+    let input = (0..1000)
+        .map(|_| {
+            let s = rng.gen_string(20);
+            let a = rng.gen_operation_seq(&s);
+            let b = rng.gen_operation_seq(&s);
+            (a, b)
+        })
+        .collect::<Vec<_>>();
     c.bench_function("transform", |b| {
         b.iter(|| {
             for (a, b) in input.iter() {
@@ -57,18 +46,14 @@ pub fn transform(c: &mut Criterion) {
 }
 
 pub fn invert(c: &mut Criterion) {
-    let mut input = Vec::with_capacity(1000);
-    for i in 0..1000_u32 {
-        let mut seed = [0; 32];
-        for (i, seed) in i.to_be_bytes().iter().zip(&mut seed) {
-            *seed = *i;
-        }
-        let s = random_string(50, Some(seed));
-        seed[seed.len() - 1] = 1;
-        let o = random_operation_seq(&s, Some(seed));
-        input.push((o, s));
-    }
-
+    let mut rng = Rng::from_seed(Default::default());
+    let input = (0..1000)
+        .map(|_| {
+            let s = rng.gen_string(50);
+            let o = rng.gen_operation_seq(&s);
+            (o, s)
+        })
+        .collect::<Vec<_>>();
     c.bench_function("invert", |b| {
         b.iter(|| {
             for (o, s) in input.iter() {
@@ -79,18 +64,14 @@ pub fn invert(c: &mut Criterion) {
 }
 
 pub fn apply(c: &mut Criterion) {
-    let mut input = Vec::with_capacity(1000);
-    for i in 0..1000_u32 {
-        let mut seed = [0; 32];
-        for (i, seed) in i.to_be_bytes().iter().zip(&mut seed) {
-            *seed = *i;
-        }
-        let s = random_string(50, Some(seed));
-        seed[seed.len() - 1] = 1;
-        let o = random_operation_seq(&s, Some(seed));
-        input.push((o, s));
-    }
-
+    let mut rng = Rng::from_seed(Default::default());
+    let input = (0..1000)
+        .map(|_| {
+            let s = rng.gen_string(50);
+            let o = rng.gen_operation_seq(&s);
+            (o, s)
+        })
+        .collect::<Vec<_>>();
     c.bench_function("apply", |b| {
         b.iter(|| {
             for (o, s) in input.iter() {
