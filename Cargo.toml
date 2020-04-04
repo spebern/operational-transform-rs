@@ -3,6 +3,8 @@ name = "operational-transform"
 version = "0.1.0"
 authors = ["bold <bold@cryptoguru.com>"]
 edition = "2018"
+license = "MIT"
+description = "A library for Operational Transformation"
 
 [dependencies]
 serde = { version = "1", default-features = false, optional = true }
