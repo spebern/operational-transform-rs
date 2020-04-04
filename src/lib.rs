@@ -6,8 +6,9 @@ pub mod utilities;
 
 use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 
+/// A single operation to be executed at the cursor's current position.
 #[derive(Debug, Clone, PartialEq)]
-enum Operation {
+pub enum Operation {
     // Deletes n characters at the current cursor position.
     Delete(u32),
     // Moves the cursor n positions forward.
@@ -441,6 +442,11 @@ impl OperationSeq {
     /// been applied.
     pub fn target_len(&self) -> usize {
         self.target_len
+    }
+
+    /// Returns the wrapped sequence of operations.
+    pub fn ops(&self) -> &Vec<Operation> {
+        &self.ops
     }
 }
 
