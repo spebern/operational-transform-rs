@@ -95,7 +95,7 @@ impl OperationSeq {
                     maybe_op1 = ops1.next();
                 }
                 (_, Some(Operation::Insert(s))) => {
-                    new_op_seq.insert(s.clone());
+                    new_op_seq.insert(s);
                     maybe_op2 = ops2.next();
                 }
                 (None, _) => {
@@ -141,18 +141,18 @@ impl OperationSeq {
                 (Some(Operation::Insert(s)), Some(Operation::Retain(j))) => {
                     match (s.chars().count() as u32).cmp(j) {
                         Ordering::Less => {
-                            new_op_seq.insert(s.to_owned());
+                            new_op_seq.insert(s);
                             maybe_op2 = Some(Operation::Retain(*j - s.chars().count() as u32));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
-                            new_op_seq.insert(s.to_owned());
+                            new_op_seq.insert(s);
                             maybe_op1 = ops1.next();
                             maybe_op2 = ops2.next();
                         }
                         Ordering::Greater => {
                             let chars = &mut s.chars();
-                            new_op_seq.insert(chars.take(*j as usize).collect());
+                            new_op_seq.insert(&chars.take(*j as usize).collect::<String>());
                             maybe_op1 = Some(Operation::Insert(chars.collect()));
                             maybe_op2 = ops2.next();
                         }
@@ -183,7 +183,7 @@ impl OperationSeq {
     fn add(&mut self, op: Operation) {
         match op {
             Operation::Delete(i) => self.delete(i),
-            Operation::Insert(s) => self.insert(s),
+            Operation::Insert(s) => self.insert(&s),
             Operation::Retain(i) => self.retain(i),
         }
     }
@@ -202,7 +202,7 @@ impl OperationSeq {
     }
 
     /// Inserts a `s` at the current cursor position.
-    pub fn insert(&mut self, s: String) {
+    pub fn insert(&mut self, s: &str) {
         if s.is_empty() {
             return;
         }
@@ -213,15 +213,15 @@ impl OperationSeq {
                 return;
             }
             [.., Operation::Insert(s_pre_last), Operation::Delete(_)] => {
-                *s_pre_last += &s;
+                *s_pre_last += s;
                 return;
             }
             [.., op_last @ Operation::Delete(_)] => {
                 let new_last = op_last.clone();
-                *op_last = Operation::Insert(s);
+                *op_last = Operation::Insert(s.to_owned());
                 new_last
             }
-            _ => Operation::Insert(s),
+            _ => Operation::Insert(s.to_owned()),
         };
         self.ops.push(new_last);
     }
@@ -266,13 +266,13 @@ impl OperationSeq {
             match (&maybe_op1, &maybe_op2) {
                 (None, None) => break,
                 (Some(Operation::Insert(s)), _) => {
-                    a_prime.insert(s.to_owned());
+                    a_prime.insert(s);
                     b_prime.retain(s.chars().count() as _);
                     maybe_op1 = ops1.next();
                 }
                 (_, Some(Operation::Insert(s))) => {
                     a_prime.retain(s.chars().count() as _);
-                    b_prime.insert(s.to_owned());
+                    b_prime.insert(s);
                     maybe_op2 = ops2.next();
                 }
                 (None, _) => {
@@ -417,7 +417,7 @@ impl OperationSeq {
                     inverse.delete(insert.chars().count() as u32);
                 }
                 Operation::Delete(delete) => {
-                    inverse.insert(chars.take(*delete as usize).collect::<String>());
+                    inverse.insert(&chars.take(*delete as usize).collect::<String>());
                 }
             }
         }
@@ -463,7 +463,7 @@ mod tests {
         o.retain(5);
         assert_eq!(o.base_len, 5);
         assert_eq!(o.target_len, 5);
-        o.insert("abc".to_owned());
+        o.insert("abc");
         assert_eq!(o.base_len, 5);
         assert_eq!(o.target_len, 8);
         o.retain(2);
@@ -479,8 +479,8 @@ mod tests {
         let mut o = OperationSeq::default();
         o.retain(5);
         o.retain(0);
-        o.insert("lorem".to_owned());
-        o.insert("".to_owned());
+        o.insert("lorem");
+        o.insert("");
         o.delete(3);
         o.delete(0);
         assert_eq!(o.ops.len(), 3);
@@ -514,7 +514,7 @@ mod tests {
     fn empty_ops() {
         let mut o = OperationSeq::default();
         o.retain(0);
-        o.insert("".to_owned());
+        o.insert("");
         o.delete(0);
         assert_eq!(o.ops.len(), 0);
     }
@@ -523,13 +523,13 @@ mod tests {
     fn eq() {
         let mut o1 = OperationSeq::default();
         o1.delete(1);
-        o1.insert("lo".to_owned());
+        o1.insert("lo");
         o1.retain(2);
         o1.retain(3);
         let mut o2 = OperationSeq::default();
         o2.delete(1);
-        o2.insert("l".to_owned());
-        o2.insert("o".to_owned());
+        o2.insert("l");
+        o2.insert("o");
         o2.retain(5);
         assert_eq!(o1, o2);
         o1.delete(1);
@@ -547,10 +547,10 @@ mod tests {
         o.retain(3);
         assert_eq!(o.ops.len(), 1);
         assert_eq!(o.ops.last(), Some(&Operation::Retain(5)));
-        o.insert("abc".to_owned());
+        o.insert("abc");
         assert_eq!(o.ops.len(), 2);
         assert_eq!(o.ops.last(), Some(&Operation::Insert("abc".to_owned())));
-        o.insert("xyz".to_owned());
+        o.insert("xyz");
         assert_eq!(o.ops.len(), 2);
         assert_eq!(o.ops.last(), Some(&Operation::Insert("abcxyz".to_owned())));
         o.delete(1);
@@ -569,7 +569,7 @@ mod tests {
         assert!(o.is_noop());
         o.retain(3);
         assert!(o.is_noop());
-        o.insert("lorem".to_owned());
+        o.insert("lorem");
         assert!(!o.is_noop());
     }
 
@@ -619,7 +619,7 @@ mod tests {
         let mut o_exp = OperationSeq::default();
         o_exp.retain(1);
         o_exp.delete(1);
-        o_exp.insert("abc".to_owned());
+        o_exp.insert("abc");
         assert_eq!(o, o_exp);
         for _ in 0..1000 {
             let s = rng.gen_string(20);

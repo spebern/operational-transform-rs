@@ -33,7 +33,7 @@ impl Rng {
             };
             match self.0.gen_range(0.0, 1.0) {
                 f if f < 0.2 => {
-                    op.insert(self.gen_string(i));
+                    op.insert(&self.gen_string(i));
                 }
                 f if f < 0.4 => {
                     op.delete(i as u32);
@@ -44,7 +44,7 @@ impl Rng {
             }
         }
         if self.0.gen_range(0.0, 1.0) < 0.3 {
-            op.insert("1".to_owned() + &self.gen_string(10));
+            op.insert(&("1".to_owned() + &self.gen_string(10)));
         }
         op
     }
