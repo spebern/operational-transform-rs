@@ -5,6 +5,8 @@ authors = ["bold <bold@cryptoguru.com>"]
 edition = "2018"
 license = "MIT"
 description = "A library for Operational Transformation"
+readme = "README.md"
+keywords = ["operational", "transform", "collaborative", "editing"]
 
 [dependencies]
 serde = { version = "1", default-features = false, optional = true }
