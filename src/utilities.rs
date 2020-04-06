@@ -36,10 +36,10 @@ impl Rng {
                     op.insert(&self.gen_string(i));
                 }
                 f if f < 0.4 => {
-                    op.delete(i as u32);
+                    op.delete(i as u64);
                 }
                 _ => {
-                    op.retain(i as u32);
+                    op.retain(i as u64);
                 }
             }
         }

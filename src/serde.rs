@@ -12,8 +12,8 @@ impl Serialize for Operation {
         S: Serializer,
     {
         match self {
-            Operation::Retain(i) => serializer.serialize_u32(*i),
-            Operation::Delete(i) => serializer.serialize_i32(-(*i as i32)),
+            Operation::Retain(i) => serializer.serialize_u64(*i),
+            Operation::Delete(i) => serializer.serialize_i64(-(*i as i64)),
             Operation::Insert(s) => serializer.serialize_str(s),
         }
     }
@@ -30,21 +30,21 @@ impl<'de> Deserialize<'de> for Operation {
             type Value = Operation;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("an integer between -2^31 and 2^31 or a string")
+                formatter.write_str("an integer between -2^64 and 2^63 or a string")
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Ok(Operation::Retain(value as u32))
+                Ok(Operation::Retain(value as u64))
             }
 
             fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Ok(Operation::Delete((-value) as u32))
+                Ok(Operation::Delete((-value) as u64))
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>

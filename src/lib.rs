@@ -101,9 +101,9 @@ use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     // Deletes n characters at the current cursor position.
-    Delete(u32),
+    Delete(u64),
     // Moves the cursor n positions forward.
-    Retain(u32),
+    Retain(u64),
     // Inserts string at the current cursor position.
     Insert(String),
 }
@@ -213,9 +213,9 @@ impl OperationSeq {
                     }
                 },
                 (Some(Operation::Insert(s)), Some(Operation::Delete(j))) => {
-                    match (s.chars().count() as u32).cmp(j) {
+                    match (s.chars().count() as u64).cmp(j) {
                         Ordering::Less => {
-                            maybe_op2 = Some(Operation::Delete(*j - s.chars().count() as u32));
+                            maybe_op2 = Some(Operation::Delete(*j - s.chars().count() as u64));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
@@ -230,10 +230,10 @@ impl OperationSeq {
                     }
                 }
                 (Some(Operation::Insert(s)), Some(Operation::Retain(j))) => {
-                    match (s.chars().count() as u32).cmp(j) {
+                    match (s.chars().count() as u64).cmp(j) {
                         Ordering::Less => {
                             new_op_seq.insert(s);
-                            maybe_op2 = Some(Operation::Retain(*j - s.chars().count() as u32));
+                            maybe_op2 = Some(Operation::Retain(*j - s.chars().count() as u64));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
@@ -280,7 +280,7 @@ impl OperationSeq {
     }
 
     /// Deletes `n` characters at the current cursor position.
-    pub fn delete(&mut self, n: u32) {
+    pub fn delete(&mut self, n: u64) {
         if n == 0 {
             return;
         }
@@ -318,7 +318,7 @@ impl OperationSeq {
     }
 
     /// Moves the cursor `n` characters forwards.
-    pub fn retain(&mut self, n: u32) {
+    pub fn retain(&mut self, n: u64) {
         if n == 0 {
             return;
         }
@@ -505,7 +505,7 @@ impl OperationSeq {
                     }
                 }
                 Operation::Insert(insert) => {
-                    inverse.delete(insert.chars().count() as u32);
+                    inverse.delete(insert.chars().count() as u64);
                 }
                 Operation::Delete(delete) => {
                     inverse.insert(&chars.take(*delete as usize).collect::<String>());
