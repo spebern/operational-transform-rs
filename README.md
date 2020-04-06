@@ -10,7 +10,7 @@
 [docs-badge]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-url]: https://docs.rs/operational-transform
 
-[ci-badge]: https://github.com/spebern/operational-transform/workflows/Rust/badge.svg
+[ci-badge]: https://github.com/spebern/operational-transform-rs/workflows/Rust/badge.svg
 [ci-url]: https://github.com/spebern/operational-transform-rs/actions
 
 A library for Operational Transformation
