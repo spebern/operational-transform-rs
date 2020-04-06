@@ -1,5 +1,18 @@
 # operational-transform
 
+[![Crates.io][crates-badge]][crates-url]
+[![docs.rs docs][docs-badge]][docs-url]
+[![ci][ci-badge]][ci-url]
+
+[crates-badge]: https://img.shields.io/crates/v/operational-transform.svg
+[crates-url]: https://crates.io/crates/operational-transform
+
+[docs-badge]: https://img.shields.io/badge/docs-latest-blue.svg
+[docs-url]: https://docs.rs/operational-transform
+
+[ci-badge]: https://github.com/spebern/operational-transform/workflows/Rust/badge.svg
+[ci-url]: https://github.com/spebern/operational-transform-rs/actions
+
 A library for Operational Transformation
 
 Operational transformation (OT) is a technology for supporting a range of
