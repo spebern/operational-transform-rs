@@ -7,6 +7,7 @@ license = "MIT"
 description = "A library for Operational Transformation"
 readme = "README.md"
 keywords = ["operational", "transform", "collaborative", "editing"]
+repository = "https://github.com/spebern/operational-transform-rs"
 
 [dependencies]
 serde = { version = "1", default-features = false, optional = true }
