@@ -109,7 +109,7 @@ pub enum Operation {
 }
 
 /// A sequence of `Operation`s on text.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct OperationSeq {
     // The consecutive operations to be applied to the target.
     ops: Vec<Operation>,
@@ -141,7 +141,7 @@ impl FromIterator<Operation> for OperationSeq {
 }
 
 /// Error for failed operational transform operations.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OTError;
 
 impl fmt::Display for OTError {
