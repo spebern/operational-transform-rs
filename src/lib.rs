@@ -157,6 +157,16 @@ impl Error for OTError {
 }
 
 impl OperationSeq {
+    /// Creates a store for operatations which does not need to allocate  until
+    /// `capacity` operations have been stored inside.
+    pub fn with_capacity(capacity: usize) -> Self{
+        Self {
+            ops: Vec::with_capacity(capacity),
+            base_len: 0,
+            target_len: 0,
+        }
+    }
+
     /// Merges the operation with `other` into one operation while preserving
     /// the changes of both. Or, in other words, for each input string S and a
     /// pair of consecutive operations A and B.
