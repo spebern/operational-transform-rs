@@ -546,7 +546,7 @@ impl OperationSeq {
     }
 
     /// Returns the wrapped sequence of operations.
-    pub fn ops(&self) -> &Vec<Operation> {
+    pub fn ops(&self) -> &[Operation] {
         &self.ops
     }
 }
