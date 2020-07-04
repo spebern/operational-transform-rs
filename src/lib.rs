@@ -65,11 +65,11 @@
 //!
 //! ## Features
 //!
-//! Serialisation is supporeted by using the `serde` feature.
+//! Serialization is supported by using the `serde` feature.
 //!
 //! - Delete(n) will be serialized to -n
 //! - Insert(s) will be serialized to "{s}"
-//! - Retain(n) will be serailized to n
+//! - Retain(n) will be serialized to n
 //!
 //! ```rust,ignore
 //! use operational_transform::OperationSeq;
@@ -159,7 +159,7 @@ impl Error for OTError {
 impl OperationSeq {
     /// Creates a store for operatations which does not need to allocate  until
     /// `capacity` operations have been stored inside.
-    pub fn with_capacity(capacity: usize) -> Self{
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
             ops: Vec::with_capacity(capacity),
             base_len: 0,
