@@ -201,10 +201,7 @@ impl OperationSeq {
                     new_op_seq.insert(s);
                     maybe_op2 = ops2.next();
                 }
-                (None, _) => {
-                    return Err(OTError);
-                }
-                (_, None) => {
+                (None, _) | (_, None) => {
                     return Err(OTError);
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => match i.cmp(&j) {
