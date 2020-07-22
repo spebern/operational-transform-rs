@@ -181,7 +181,7 @@ impl OperationSeq {
     /// conflicts.
     pub fn compose(&self, other: &Self) -> Result<Self, OTError> {
         if self.target_len != other.base_len {
-            return Err(OTError {});
+            return Err(OTError);
         }
 
         let mut new_op_seq = OperationSeq::default();
@@ -356,7 +356,7 @@ impl OperationSeq {
     /// length conflicts.
     pub fn transform(&self, other: &Self) -> Result<(Self, Self), OTError> {
         if self.base_len != other.base_len {
-            return Err(OTError {});
+            return Err(OTError);
         }
 
         let mut a_prime = OperationSeq::default();
@@ -381,10 +381,10 @@ impl OperationSeq {
                     maybe_op2 = ops2.next();
                 }
                 (None, _) => {
-                    return Err(OTError {});
+                    return Err(OTError);
                 }
                 (_, None) => {
-                    return Err(OTError {});
+                    return Err(OTError);
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => {
                     match i.cmp(&j) {
@@ -474,7 +474,7 @@ impl OperationSeq {
     /// conflicts.
     pub fn apply(&self, s: &str) -> Result<String, OTError> {
         if num_chars(s.as_bytes()) != self.base_len {
-            return Err(OTError {});
+            return Err(OTError);
         }
         let mut new_s = String::new();
         let chars = &mut s.chars();
