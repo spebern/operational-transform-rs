@@ -159,6 +159,7 @@ impl Error for OTError {
 impl OperationSeq {
     /// Creates a store for operatations which does not need to allocate  until
     /// `capacity` operations have been stored inside.
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             ops: Vec::with_capacity(capacity),
@@ -522,6 +523,7 @@ impl OperationSeq {
     }
 
     /// Checks if this operation has no effect.
+    #[inline]
     pub fn is_noop(&self) -> bool {
         match self.ops.as_slice() {
             [] => true,
@@ -531,17 +533,20 @@ impl OperationSeq {
     }
 
     /// Returns the length of a string these operations can be applied to
+    #[inline]
     pub fn base_len(&self) -> usize {
         self.base_len
     }
 
     /// Returns the length of the resulting string after the operations have
     /// been applied.
+    #[inline]
     pub fn target_len(&self) -> usize {
         self.target_len
     }
 
     /// Returns the wrapped sequence of operations.
+    #[inline]
     pub fn ops(&self) -> &[Operation] {
         &self.ops
     }
