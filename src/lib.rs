@@ -383,26 +383,26 @@ impl OperationSeq {
                     return Err(OTError {});
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => {
-                    let mut min = 0;
                     match i.cmp(&j) {
                         Ordering::Less => {
-                            min = *i;
+                            a_prime.retain(*i);
+                            b_prime.retain(*i);
                             maybe_op2 = Some(Operation::Retain(*j - *i));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
-                            min = *i;
+                            a_prime.retain(*i);
+                            b_prime.retain(*i);
                             maybe_op1 = ops1.next();
                             maybe_op2 = ops2.next();
                         }
                         Ordering::Greater => {
-                            min = *j;
+                            a_prime.retain(*j);
+                            b_prime.retain(*j);
                             maybe_op1 = Some(Operation::Retain(*i - *j));
                             maybe_op2 = ops2.next();
                         }
                     };
-                    a_prime.retain(min);
-                    b_prime.retain(min);
                 }
                 (Some(Operation::Delete(i)), Some(Operation::Delete(j))) => match i.cmp(&j) {
                     Ordering::Less => {
@@ -419,46 +419,42 @@ impl OperationSeq {
                     }
                 },
                 (Some(Operation::Delete(i)), Some(Operation::Retain(j))) => {
-                    let mut min = 0;
                     match i.cmp(&j) {
                         Ordering::Less => {
-                            min = *i;
+                            a_prime.delete(*i);
                             maybe_op2 = Some(Operation::Retain(*j - *i));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
-                            min = *i;
+                            a_prime.delete(*i);
                             maybe_op1 = ops1.next();
                             maybe_op2 = ops2.next();
                         }
                         Ordering::Greater => {
-                            min = *j;
+                            a_prime.delete(*j);
                             maybe_op1 = Some(Operation::Delete(*i - *j));
                             maybe_op2 = ops2.next();
                         }
                     };
-                    a_prime.delete(min);
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Delete(j))) => {
-                    let mut min = 0;
                     match i.cmp(&j) {
                         Ordering::Less => {
-                            min = *i;
+                            b_prime.delete(*i);
                             maybe_op2 = Some(Operation::Delete(*j - *i));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
-                            min = *i;
+                            b_prime.delete(*i);
                             maybe_op1 = ops1.next();
                             maybe_op2 = ops2.next();
                         }
                         Ordering::Greater => {
-                            min = *j;
+                            b_prime.delete(*j);
                             maybe_op1 = Some(Operation::Retain(*i - *j));
                             maybe_op2 = ops2.next();
                         }
                     };
-                    b_prime.delete(min);
                 }
             }
         }
