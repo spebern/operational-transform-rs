@@ -9,8 +9,13 @@ readme = "README.md"
 keywords = ["operational", "transform", "collaborative", "editing"]
 repository = "https://github.com/spebern/operational-transform-rs"
 
+[features]
+runtime-dispatch-simd = ["bytecount/runtime-dispatch-simd"]
+generic-simd = ["bytecount/generic-simd"]
+
 [dependencies]
 serde = { version = "1", default-features = false, optional = true }
+bytecount = "0.6.0"
 
 [dev-dependencies]
 rand = "0.7.3"

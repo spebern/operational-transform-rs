@@ -95,6 +95,7 @@ pub mod serde;
 #[cfg(any(test, bench))]
 pub mod utilities;
 
+use bytecount::num_chars;
 use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 
 /// A single operation to be executed at the cursor's current position.
@@ -224,9 +225,10 @@ impl OperationSeq {
                     }
                 },
                 (Some(Operation::Insert(s)), Some(Operation::Delete(j))) => {
-                    match (s.chars().count() as u64).cmp(j) {
+                    match (num_chars(s.as_bytes()) as u64).cmp(j) {
                         Ordering::Less => {
-                            maybe_op2 = Some(Operation::Delete(*j - s.chars().count() as u64));
+                            maybe_op2 =
+                                Some(Operation::Delete(*j - num_chars(s.as_bytes()) as u64));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
@@ -241,10 +243,11 @@ impl OperationSeq {
                     }
                 }
                 (Some(Operation::Insert(s)), Some(Operation::Retain(j))) => {
-                    match (s.chars().count() as u64).cmp(j) {
+                    match (num_chars(s.as_bytes()) as u64).cmp(j) {
                         Ordering::Less => {
                             new_op_seq.insert(s);
-                            maybe_op2 = Some(Operation::Retain(*j - s.chars().count() as u64));
+                            maybe_op2 =
+                                Some(Operation::Retain(*j - num_chars(s.as_bytes()) as u64));
                             maybe_op1 = ops1.next();
                         }
                         Ordering::Equal => {
@@ -308,7 +311,7 @@ impl OperationSeq {
         if s.is_empty() {
             return;
         }
-        self.target_len += s.chars().count();
+        self.target_len += num_chars(s.as_bytes());
         let new_last = match self.ops.as_mut_slice() {
             [.., Operation::Insert(s_last)] => {
                 *s_last += &s;
@@ -369,11 +372,11 @@ impl OperationSeq {
                 (None, None) => break,
                 (Some(Operation::Insert(s)), _) => {
                     a_prime.insert(s);
-                    b_prime.retain(s.chars().count() as _);
+                    b_prime.retain(num_chars(s.as_bytes()) as _);
                     maybe_op1 = ops1.next();
                 }
                 (_, Some(Operation::Insert(s))) => {
-                    a_prime.retain(s.chars().count() as _);
+                    a_prime.retain(num_chars(s.as_bytes()) as _);
                     b_prime.insert(s);
                     maybe_op2 = ops2.next();
                 }
@@ -470,7 +473,7 @@ impl OperationSeq {
     /// Returns an error if the operation cannot be applied due to length
     /// conflicts.
     pub fn apply(&self, s: &str) -> Result<String, OTError> {
-        if s.chars().count() != self.base_len {
+        if num_chars(s.as_bytes()) != self.base_len {
             return Err(OTError {});
         }
         let mut new_s = String::new();
@@ -512,7 +515,7 @@ impl OperationSeq {
                     }
                 }
                 Operation::Insert(insert) => {
-                    inverse.delete(insert.chars().count() as u64);
+                    inverse.delete(num_chars(insert.as_bytes()) as u64);
                 }
                 Operation::Delete(delete) => {
                     inverse.insert(&chars.take(*delete as usize).collect::<String>());
@@ -594,7 +597,7 @@ mod tests {
             let mut rng = Rng::default();
             let s = rng.gen_string(50);
             let o = rng.gen_operation_seq(&s);
-            assert_eq!(s.chars().count(), o.base_len);
+            assert_eq!(num_chars(s.as_bytes()), o.base_len);
             assert_eq!(o.apply(&s).unwrap().chars().count(), o.target_len);
         }
     }
@@ -682,10 +685,10 @@ mod tests {
             let s = rng.gen_string(20);
             let a = rng.gen_operation_seq(&s);
             let after_a = a.apply(&s).unwrap();
-            assert_eq!(a.target_len, after_a.chars().count());
+            assert_eq!(a.target_len, num_chars(after_a.as_bytes()));
             let b = rng.gen_operation_seq(&after_a);
             let after_b = b.apply(&after_a).unwrap();
-            assert_eq!(b.target_len, after_b.chars().count());
+            assert_eq!(b.target_len, num_chars(after_b.as_bytes()));
             let ab = a.compose(&b).unwrap();
             assert_eq!(ab.target_len, b.target_len);
             let after_ab = ab.apply(&s).unwrap();
