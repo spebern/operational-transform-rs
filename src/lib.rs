@@ -475,7 +475,7 @@ impl OperationSeq {
         }
         let mut new_s = String::new();
         let chars = &mut s.chars();
-        for op in self.ops.iter() {
+        for op in &self.ops {
             match op {
                 Operation::Retain(retain) => {
                     for c in chars.take(*retain as usize) {
@@ -503,7 +503,7 @@ impl OperationSeq {
     pub fn invert(&self, s: &str) -> Self {
         let mut inverse = OperationSeq::default();
         let chars = &mut s.chars();
-        for op in self.ops.iter() {
+        for op in &self.ops {
             match op {
                 Operation::Retain(retain) => {
                     inverse.retain(*retain);
