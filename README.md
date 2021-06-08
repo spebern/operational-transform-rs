@@ -21,7 +21,7 @@ collaboration functionalities in advanced collaborative software systems.
 
 When working on the same document over the internet concurrent operations
 from multiple users might be in conflict. **Operational Transform** can help
-to resolve conflicts in such a way that docuemnts stay in sync.
+to resolve conflicts in such a way that documents stay in sync.
 
 The basic operations that are supported are:
 - Retain(n): Move the cursor `n` positions forward
