@@ -110,7 +110,7 @@ pub enum Operation {
 }
 
 /// A sequence of `Operation`s on text.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct OperationSeq {
     // The consecutive operations to be applied to the target.
     ops: Vec<Operation>,
@@ -119,16 +119,6 @@ pub struct OperationSeq {
     // The length of the resulting string after the operations have been
     // applied.
     target_len: usize,
-}
-
-impl Default for OperationSeq {
-    fn default() -> Self {
-        Self {
-            ops: Vec::new(),
-            base_len: 0,
-            target_len: 0,
-        }
-    }
 }
 
 impl FromIterator<Operation> for OperationSeq {
@@ -204,7 +194,7 @@ impl OperationSeq {
                 (None, _) | (_, None) => {
                     return Err(OTError);
                 }
-                (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => match i.cmp(&j) {
+                (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => match i.cmp(j) {
                     Ordering::Less => {
                         new_op_seq.retain(*i);
                         maybe_op2 = Some(Operation::Retain(*j - *i));
@@ -260,7 +250,7 @@ impl OperationSeq {
                         }
                     }
                 }
-                (Some(Operation::Retain(i)), Some(Operation::Delete(j))) => match i.cmp(&j) {
+                (Some(Operation::Retain(i)), Some(Operation::Delete(j))) => match i.cmp(j) {
                     Ordering::Less => {
                         new_op_seq.delete(*i);
                         maybe_op2 = Some(Operation::Delete(*j - *i));
@@ -311,7 +301,7 @@ impl OperationSeq {
         self.target_len += num_chars(s.as_bytes());
         let new_last = match self.ops.as_mut_slice() {
             [.., Operation::Insert(s_last)] => {
-                *s_last += &s;
+                *s_last += s;
                 return;
             }
             [.., Operation::Insert(s_pre_last), Operation::Delete(_)] => {
@@ -384,7 +374,7 @@ impl OperationSeq {
                     return Err(OTError);
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Retain(j))) => {
-                    match i.cmp(&j) {
+                    match i.cmp(j) {
                         Ordering::Less => {
                             a_prime.retain(*i);
                             b_prime.retain(*i);
@@ -405,7 +395,7 @@ impl OperationSeq {
                         }
                     };
                 }
-                (Some(Operation::Delete(i)), Some(Operation::Delete(j))) => match i.cmp(&j) {
+                (Some(Operation::Delete(i)), Some(Operation::Delete(j))) => match i.cmp(j) {
                     Ordering::Less => {
                         maybe_op2 = Some(Operation::Delete(*j - *i));
                         maybe_op1 = ops1.next();
@@ -420,7 +410,7 @@ impl OperationSeq {
                     }
                 },
                 (Some(Operation::Delete(i)), Some(Operation::Retain(j))) => {
-                    match i.cmp(&j) {
+                    match i.cmp(j) {
                         Ordering::Less => {
                             a_prime.delete(*i);
                             maybe_op2 = Some(Operation::Retain(*j - *i));
@@ -439,7 +429,7 @@ impl OperationSeq {
                     };
                 }
                 (Some(Operation::Retain(i)), Some(Operation::Delete(j))) => {
-                    match i.cmp(&j) {
+                    match i.cmp(j) {
                         Ordering::Less => {
                             b_prime.delete(*i);
                             maybe_op2 = Some(Operation::Delete(*j - *i));
@@ -525,11 +515,7 @@ impl OperationSeq {
     /// Checks if this operation has no effect.
     #[inline]
     pub fn is_noop(&self) -> bool {
-        match self.ops.as_slice() {
-            [] => true,
-            [Operation::Retain(_)] => true,
-            _ => false,
-        }
+        matches!(self.ops.as_slice(), [] | [Operation::Retain(_)])
     }
 
     /// Returns the length of a string these operations can be applied to
