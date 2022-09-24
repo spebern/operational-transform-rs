@@ -83,10 +83,10 @@
 //! assert_eq!(o, o_exp);
 //! ```
 //!
-//! ## Acknowledgement
+//! ## Acknowledgment
 //! In the current state the code is ported from
 //! [here](https://github.com/Operational-Transformation/ot.js/). It might
-//! change in the future as there is much room for optimisation and also
+//! change in the future as there is much room for optimization and also
 //! usability.
 
 #[cfg(feature = "serde")]
@@ -148,7 +148,7 @@ impl Error for OTError {
 }
 
 impl OperationSeq {
-    /// Creates a store for operatations which does not need to allocate  until
+    /// Creates a store for operations which does not need to allocate  until
     /// `capacity` operations have been stored inside.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
