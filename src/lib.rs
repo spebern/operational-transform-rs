@@ -99,7 +99,7 @@ use bytecount::num_chars;
 use std::{cmp::Ordering, error::Error, fmt, iter::FromIterator};
 
 /// A single operation to be executed at the cursor's current position.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operation {
     // Deletes n characters at the current cursor position.
     Delete(u64),
