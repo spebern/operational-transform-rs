@@ -1,0 +1,27 @@
+[package]
+name = "operational-transform"
+version = "0.6.1"
+authors = ["bold <bold@cryptoguru.com>"]
+edition = "2018"
+license = "MIT"
+description = "A library for Operational Transformation"
+readme = "README.md"
+keywords = ["operational", "transform", "collaborative", "editing"]
+repository = "https://github.com/spebern/operational-transform-rs"
+
+[features]
+runtime-dispatch-simd = ["bytecount/runtime-dispatch-simd"]
+generic-simd = ["bytecount/generic-simd"]
+
+[dependencies]
+serde = { version = "1", default-features = false, optional = true }
+bytecount = "0.6.0"
+
+[dev-dependencies]
+rand = "0.7.3"
+serde_json = "1.0.50"
+criterion = "0.3"
+
+[[bench]]
+name = "benchmark"
+harness = false
