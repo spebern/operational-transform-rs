@@ -3,13 +3,12 @@
 [![Crates.io][crates-badge]][crates-url]
 [![docs.rs docs][docs-badge]][docs-url]
 [![ci][ci-badge]][ci-url]
+[![codecov](https://codecov.io/gh/spebern/operational-transform-rs/branch/master/graph/badge.svg?token=JM8YS98GDV)](https://codecov.io/gh/spebern/operational-transform-rs)
 
 [crates-badge]: https://img.shields.io/crates/v/operational-transform.svg
 [crates-url]: https://crates.io/crates/operational-transform
-
 [docs-badge]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-url]: https://docs.rs/operational-transform
-
 [ci-badge]: https://github.com/spebern/operational-transform-rs/workflows/Rust/badge.svg
 [ci-url]: https://github.com/spebern/operational-transform-rs/actions
 
@@ -24,13 +23,15 @@ from multiple users might be in conflict. **Operational Transform** can help
 to resolve conflicts in such a way that documents stay in sync.
 
 The basic operations that are supported are:
+
 - Retain(n): Move the cursor `n` positions forward
 - Delete(n): Delete `n` characters at the current position
 - Insert(s): Insert the string `s` at the current position
 
-This library can be  used to...
+This library can be used to...
 
 ... compose sequences of operations:
+
 ```rust
 use operational_transform::OperationSeq;
 
@@ -47,6 +48,7 @@ assert_eq!(after_ab, after_b);
 ```
 
 ... transform sequences of operations
+
 ```rust
 use operational_transform::OperationSeq;
 
@@ -67,6 +69,7 @@ assert_eq!(after_ab_prime, after_ba_prime);
 ```
 
 ... invert sequences of operations
+
 ```rust
 use operational_transform::OperationSeq;
 
@@ -99,6 +102,7 @@ assert_eq!(o, o_exp);
 ```
 
 ### Acknowledgement
+
 In the current state the code is ported from
 [here](https://github.com/Operational-Transformation/ot.js/). It might
 change in the future as there is much room for optimisation and also
