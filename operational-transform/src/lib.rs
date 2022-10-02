@@ -110,7 +110,7 @@ pub enum Operation {
 }
 
 /// A sequence of `Operation`s on text.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct OperationSeq {
     // The consecutive operations to be applied to the target.
     ops: Vec<Operation>,
