@@ -357,6 +357,26 @@ impl OperationSeq {
         loop {
             match (&maybe_op1, &maybe_op2) {
                 (None, None) => break,
+                (Some(Operation::Insert(s)), Some(Operation::Insert(t))) => match s.cmp(t) {
+                    Ordering::Less => {
+                        a_prime.insert(s);
+                        b_prime.retain(num_chars(s.as_bytes()) as _);
+                        maybe_op1 = ops1.next();
+                    }
+                    Ordering::Equal => {
+                        a_prime.insert(s);
+                        a_prime.retain(num_chars(s.as_bytes()) as _);
+                        b_prime.insert(s);
+                        b_prime.retain(num_chars(s.as_bytes()) as _);
+                        maybe_op1 = ops1.next();
+                        maybe_op2 = ops2.next();
+                    }
+                    Ordering::Greater => {
+                        a_prime.retain(num_chars(t.as_bytes()) as _);
+                        b_prime.insert(t);
+                        maybe_op2 = ops2.next();
+                    }
+                },
                 (Some(Operation::Insert(s)), _) => {
                     a_prime.insert(s);
                     b_prime.retain(num_chars(s.as_bytes()) as _);
@@ -687,6 +707,9 @@ mod tests {
             let a = rng.gen_operation_seq(&s);
             let b = rng.gen_operation_seq(&s);
             let (a_prime, b_prime) = a.transform(&b).unwrap();
+            let (b_prime_2, a_prime_2) = b.transform(&a).unwrap();
+            assert_eq!(a_prime,a_prime_2);
+            assert_eq!(b_prime,b_prime_2);
             let ab_prime = a.compose(&b_prime).unwrap();
             let ba_prime = b.compose(&a_prime).unwrap();
             let after_ab_prime = ab_prime.apply(&s).unwrap();
