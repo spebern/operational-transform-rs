@@ -705,8 +705,8 @@ mod tests {
             let b = rng.gen_operation_seq(&s);
             let (a_prime, b_prime) = a.transform(&b).unwrap();
             let (b_prime_2, a_prime_2) = b.transform(&a).unwrap();
-            assert_eq!(a_prime,a_prime_2);
-            assert_eq!(b_prime,b_prime_2);
+            assert_eq!(a_prime, a_prime_2);
+            assert_eq!(b_prime, b_prime_2);
             let ab_prime = a.compose(&b_prime).unwrap();
             let ba_prime = b.compose(&a_prime).unwrap();
             let after_ab_prime = ab_prime.apply(&s).unwrap();
